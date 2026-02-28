@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>ros2htop</name>
+  <version>0.0.1</version>
+  <description>A real-time terminal monitor for ROS 2, showing node stats, lifecycle state, CPU, memory, GPU usage, topic and service counts, and message rates.</description>
+  <maintainer email="selinis.g@gmail.com">yiannis88</maintainer>
+  <license>MIT</license>
+
+  <depend>rclpy</depend>
+  <depend>ros2htop_interfaces</depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>ament_mypy</test_depend>
+  <test_depend>python3-pytest</test_depend>
+  <test_depend>python3-pytest-asyncio</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

@@ -1,0 +1,16 @@
+# VS Code
+.vscode/
+
+# Build output
+**/build/
+**/install/
+**/log/
+**/*_env/
+**/.pytest_cache/
+
+# Byte-compiled / optimized / DLL files
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+
