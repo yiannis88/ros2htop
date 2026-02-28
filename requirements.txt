@@ -1,0 +1,4 @@
+psutil>=7.0.0
+nvidia-ml-py>=13.590.48
+textual>=7.5.0
+rich>=14.3.2
