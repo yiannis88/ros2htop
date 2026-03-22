@@ -27,6 +27,7 @@ Spin 50 lifecycle nodes with 2 publishers each.
 Author: yiannis88 <selinis.g@gmail.com> 2026
 """
 
+import sys
 import random
 import rclpy
 from rclpy.lifecycle import LifecycleNode, LifecycleState, TransitionCallbackReturn

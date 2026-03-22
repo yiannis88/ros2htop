@@ -30,8 +30,11 @@ Author: yiannis88 <selinis.g@gmail.com> 2026
 
 import os
 import threading
+
 import psutil
+from rclpy.utilities import get_available_rmw_implementations, get_rmw_implementation_identifier
 from textual import log
+
 
 try:
     import pynvml
@@ -56,7 +59,8 @@ class SystemTasks:
             'gpu_sys': 0.0,
             'temp_sys': 0.0,
             'ros_domain_id': os.getenv('ROS_DOMAIN_ID'),
-            'rmw_implementation': os.getenv('RMW_IMPLEMENTATION'),
+            'rmw_implementation': get_rmw_implementation_identifier(),
+            'rmw_avimpl': get_available_rmw_implementations(),
             'ros_distro': os.getenv('ROS_DISTRO')
         }
         self._gpu_proc_map = {}

@@ -3,7 +3,9 @@
 # Licensed under the MIT License.
 
 import os
+
 from setuptools import find_packages, setup
+
 
 package_name = 'ros2htop'
 
@@ -21,7 +23,7 @@ def generate_data_files(share_p: str, dir_: str) -> list:
 
 setup(
     name=package_name,
-    version='0.0.1',
+    version='0.0.2',
     packages=find_packages(exclude=['test']),
     data_files=[
         ('share/ament_index/resource_index/packages',

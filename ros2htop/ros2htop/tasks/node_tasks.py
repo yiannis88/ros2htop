@@ -28,14 +28,15 @@ disk usage, etc.
 Author: yiannis88 <selinis.g@gmail.com> 2026
 """
 
+from functools import partial
 import threading
 import time
-from functools import partial
 from typing import Dict, Union
-import psutil
-from rclpy.task import Future
-from rclpy.lifecycle import LifecycleNode
+
 from lifecycle_msgs.srv import GetState
+import psutil
+from rclpy.lifecycle import LifecycleNode
+from rclpy.task import Future
 from textual import log
 
 
@@ -74,7 +75,8 @@ class NodeTasks:
             result = future.result()
             if result:
                 with self._lock:
-                    self._metrics[node_name]['lifecycle_state'] = result.current_state.label
+                    if node_name in self._metrics:
+                        self._metrics[node_name]['lifecycle_state'] = result.current_state.label
         except Exception as err:
             log('Error getting node state: %s', err)
 
@@ -118,10 +120,10 @@ class NodeTasks:
             available_slots = NodeTasks.BATCH_SIZE - unavailable_slots
             batch_nodes = sorted_nodes[:available_slots]
 
-            for name, data in batch_nodes:
+            for name, _ in batch_nodes:
                 try:
                     now_started = time.time()
-                    service_name = f"{data['ns']}/{name}/get_state".replace('//', '/')
+                    service_name = f"{name}/get_state".replace('//', '/')
                     client = self._node.create_client(GetState, service_name)
                     req = GetState.Request()
                     future = client.call_async(req)
@@ -151,6 +153,37 @@ class NodeTasks:
             """Find the PID of the ROS node."""
             if not node_names:
                 return
+
+            def extract_ros_node_name(cmdline_list):
+                """Extract ros name."""
+                for i, arg in enumerate(cmdline_list):
+                    if '__node:=' in arg:
+                        return arg.split(':=')[1]
+                    if arg == '-r' and i + 1 < len(cmdline_list):
+                        next_arg = cmdline_list[i + 1]
+                        if '__node:=' in next_arg:
+                            return next_arg.split(':=')[1]
+                return None
+
+            def extract_ros_namespace(cmdline_list):
+                for i, arg in enumerate(cmdline_list):
+                    if '__ns:=' in arg:
+                        return arg.split(':=')[1]
+                    if arg == '-r' and i + 1 < len(cmdline_list):
+                        nxt = cmdline_list[i + 1]
+                        if '__ns:=' in nxt:
+                            return nxt.split(':=')[1]
+                return '/'
+
+            def is_ros2_wrapper(cmdline_list):
+                """Filter out ros2 stuff."""
+                return (
+                    len(cmdline_list) >= 2
+                    and 'ros2' in cmdline_list[0]
+                    and ('run' in cmdline_list or 'launch' in cmdline_list)
+                )
+
+            candidates = {key: [] for key in node_names}
             for process in psutil.process_iter(['pid',
                                                 'cmdline',
                                                 'name',
@@ -160,32 +193,63 @@ class NodeTasks:
                     cmdline_list = process.info['cmdline'] or []
                     if not cmdline_list:
                         continue
-
-                    cmdline = " ".join(cmdline_list)
+                    if is_ros2_wrapper(cmdline_list):
+                        continue
+                    ros_node = extract_ros_node_name(cmdline_list)
+                    ros_ns = extract_ros_namespace(cmdline_list)
+                    
                     for name, value in node_names.items():
-                        if f"__node:={name}" in cmdline or name in cmdline:
-                            pid = process.pid
-                            gpu = gpu_map.get(pid) if gpu_map else None
-                            proc_mem = process.memory_info().rss
-                            value['pid'] = pid
-                            value['uptime'] = (time.time() - process.create_time()) / 60.0
-                            value['mem'] = proc_mem / (1024 * 1024)
-                            value['mem_pct'] = max(min((proc_mem / mem_total) * 100.0, 100.0), 0.0)
-                            value['cpu'] = process.cpu_percent(interval=None)
-                            value['core'] = process.cpu_num()
-                            if gpu:
-                                value['gpu_mem_mb'] = gpu.get('gpu_mem_mb')
-                                value['gpu_mem_pct'] = gpu.get('gpu_mem_pct')
-                                value['gpu_index'] = gpu.get('gpu_index')
-                                value['gpu_load'] = gpu.get('gpu_load')
-                except Exception:
+                        match = False
+                        if ros_node:
+                            if ros_node == value['node'] and ros_ns == value['ns']:
+                                match = True
+                        else:
+                            name_ = value['node']
+                            exe = process.info['name'] or ''
+                            if ros_ns == value['ns'] and (exe == name_ or exe == f'{name_}_node'):
+                                match = True
+                        if not match:
+                            continue
+                        candidates[name].append(process)
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    continue
+
+            for name, procs in candidates.items():
+                if not procs:
+                    continue
+                proc = max(procs, key=lambda p: p.info['create_time'])
+                try:
+                    pid = proc.pid
+                    value = node_names[name]
+
+                    gpu = gpu_map.get(pid) if gpu_map else None
+                    proc_mem = proc.memory_info().rss
+
+                    value['pid'] = pid
+                    value['uptime'] = (time.time() - proc.create_time()) / 60.0
+                    value['mem'] = proc_mem / (1024 * 1024)
+                    value['mem_pct'] = max(min((proc_mem / mem_total) * 100.0, 100.0), 0.0)
+                    value['cpu'] = proc.cpu_percent(interval=None)
+                    value['core'] = proc.cpu_num()
+
+                    if gpu:
+                        value['gpu_mem_mb'] = gpu.get('gpu_mem_mb')
+                        value['gpu_mem_pct'] = gpu.get('gpu_mem_pct')
+                        value['gpu_index'] = gpu.get('gpu_index')
+                        value['gpu_load'] = gpu.get('gpu_load')
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
                     continue
 
         try:
             node_list = node.get_node_names_and_namespaces()
             mem_total = psutil.virtual_memory().total
             for name, ns in node_list:
-                node_names[name] = {
+                if ns == '/':
+                    fq_name = f'/{name}'
+                else:
+                    fq_name = f'{ns}/{name}'
+                node_names[fq_name] = {
+                    'node': name,
                     'ns': ns,
                     'pid': -1,
                     'uptime': -1,
@@ -208,7 +272,6 @@ class NodeTasks:
                         del self._metrics[existing_node]
                 for name, data in node_names.items():
                     if name in self._metrics:
-                        self._metrics[name]['ns'] = data['ns']
                         self._metrics[name]['pid'] = data['pid']
                         self._metrics[name]['uptime'] = data['uptime']
                         self._metrics[name]['mem'] = data['mem']
