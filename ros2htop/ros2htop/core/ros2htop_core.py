@@ -30,18 +30,19 @@ Author: yiannis88 <selinis.g@gmail.com> 2026
 """
 
 import threading
-from textual import log
-from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy, HistoryPolicy
-from rclpy.lifecycle import LifecycleNode, LifecycleState, TransitionCallbackReturn
-from rcl_interfaces.msg import ParameterDescriptor, FloatingPointRange, SetParametersResult
-from ros2htop_interfaces.msg import RosHtopStats
 
-from ros2htop.tasks.system_tasks import SystemTasks
-from ros2htop.tasks.node_tasks import NodeTasks
-from ros2htop.tasks.topic_tasks import TopicTasks
-from ros2htop.tasks.service_tasks import ServiceTasks
-from ros2htop.tasks.parameter_tasks import ParameterTasks
+from rcl_interfaces.msg import FloatingPointRange, ParameterDescriptor, SetParametersResult
+from rclpy.lifecycle import LifecycleNode, LifecycleState, TransitionCallbackReturn
+from rclpy.qos import DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPolicy
+
 from ros2htop.tasks.action_tasks import ActionTasks
+from ros2htop.tasks.node_tasks import NodeTasks
+from ros2htop.tasks.parameter_tasks import ParameterTasks
+from ros2htop.tasks.service_tasks import ServiceTasks
+from ros2htop.tasks.system_tasks import SystemTasks
+from ros2htop.tasks.topic_tasks import TopicTasks
+from ros2htop_interfaces.msg import RosHtopStats
+from textual import log
 
 
 QOS_PROFILE = QoSProfile(
@@ -71,11 +72,11 @@ class Ros2HtopCore(LifecycleNode):
         self.timer = None
         self.publisher = None
 
-        self.tui_metrics_nodetab = {"sys": {}, "node": {}}
-        self.tui_metrics_topictab = {"topic": {}}
-        self.tui_metrics_servicetab = {"service": {}}
-        self.tui_metrics_paramtab = {"param": {}}
-        self.tui_metrics_actiontab = {"action": {}}
+        self.tui_metrics_nodetab = {'sys': {}, 'node': {}}
+        self.tui_metrics_topictab = {'topic': {}}
+        self.tui_metrics_servicetab = {'service': {}}
+        self.tui_metrics_paramtab = {'param': {}}
+        self.tui_metrics_actiontab = {'action': {}}
 
         # Declare the tasks & timers :)
         self.system_task = None
@@ -140,21 +141,21 @@ class Ros2HtopCore(LifecycleNode):
         if self.param_task:
             self.param_task.update_metrics(node=self)
 
-    def fetch_metrics(self, active_tab: str = "Nodes"):
+    def fetch_metrics(self, active_tab: str = 'Nodes'):
         """Fetch the latest metrics for the TUI."""
-        if active_tab == "Nodes":
+        if active_tab == 'Nodes':
             with self._lock_nodetab:
                 return self.tui_metrics_nodetab.copy()
-        elif active_tab == "Topics":
+        elif active_tab == 'Topics':
             with self._lock_topictab:
                 return self.tui_metrics_topictab.copy()
-        elif active_tab == "Services":
+        elif active_tab == 'Services':
             with self._lock_servicetab:
                 return self.tui_metrics_servicetab.copy()
-        elif active_tab == "Parameters":
+        elif active_tab == 'Parameters':
             with self._lock_paramtab:
                 return self.tui_metrics_paramtab.copy()
-        elif active_tab == "Actions":
+        elif active_tab == 'Actions':
             with self._lock_actiontab:
                 return self.tui_metrics_actiontab.copy()
         return {}
@@ -258,7 +259,6 @@ class Ros2HtopCore(LifecycleNode):
             self.param_tab_timer.cancel()
         self.timer = self.create_timer(timer_period_sec=self.update_rate,
                                        callback=self._update_metrics)
-
         self.node_tab_timer = self.create_timer(timer_period_sec=self.update_rate,
                                                 callback=self.update_node_tab)
         self.topic_tab_timer = self.create_timer(timer_period_sec=2*self.update_rate,

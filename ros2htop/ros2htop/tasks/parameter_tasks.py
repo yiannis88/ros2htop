@@ -29,9 +29,10 @@ Author: yiannis88 <selinis.g@gmail.com> 2026
 
 import threading
 import time
-from typing import Dict, Any
+from typing import Any, Dict
+
+from rcl_interfaces.srv import GetParameterTypes, ListParameters
 from rclpy.lifecycle import LifecycleNode
-from rcl_interfaces.srv import ListParameters, GetParameterTypes
 from textual import log
 
 
@@ -77,13 +78,13 @@ class ParameterTasks:
             with self._lock_list:
                 self._list_state.pop(fqn, None)
                 self._list_state[fqn] = {
-                    "names": names,
-                    "timestamp": time.time()
+                    'names': names,
+                    'timestamp': time.time()
                 }
 
             with self._lock:
                 if fqn in self._metrics:
-                    self._metrics[fqn]["names"] = names
+                    self._metrics[fqn]['names'] = names
         except Exception:
             with self._lock_list:
                 self._list_state.pop(fqn, None)
@@ -94,9 +95,9 @@ class ParameterTasks:
             with self._lock_list:
                 for fqn in list(self._list_state.keys()):
                     state = self._list_state[fqn]
-                    if "future" in state and state["future"].done():
+                    if 'future' in state and state['future'].done():
                         self._list_state.pop(fqn)
-                    elif time.time() - state.get("timestamp", 0) > self.SERVICE_TIMEOUT:
+                    elif time.time() - state.get('timestamp', 0) > self.SERVICE_TIMEOUT:
                         self._list_state.pop(fqn)
 
             with self._lock_list:
@@ -106,14 +107,14 @@ class ParameterTasks:
 
             with self._lock:
                 for fqn, data in self._metrics.items():
-                    if data["names"] is not None:
+                    if data['names'] is not None:
                         continue
                     with self._lock_list:
                         if fqn in self._list_state:
                             continue
 
                     try:
-                        client = self._node.create_client(ListParameters, data["list_srv"])
+                        client = self._node.create_client(ListParameters, data['list_srv'])
                         req = ListParameters.Request()
                         req.prefixes = []
                         req.depth = 10
@@ -122,7 +123,7 @@ class ParameterTasks:
                         future.add_done_callback(lambda fut, fqn=fqn: self._list_res_cb(fut, fqn))
 
                         with self._lock_list:
-                            self._list_state[fqn] = {"future": future, "timestamp": time.time()}
+                            self._list_state[fqn] = {'future': future, 'timestamp': time.time()}
                     except Exception:
                         continue
 
@@ -136,13 +137,13 @@ class ParameterTasks:
 
             with self._lock_type:
                 self._type_state.pop(fqn, None)
-                self._type_state[fqn] = {"types": types, "timestamp": time.time()}
+                self._type_state[fqn] = {'types': types, 'timestamp': time.time()}
 
             with self._lock:
-                if fqn in self._metrics and "names" in self._metrics[fqn]:
-                    names = self._metrics[fqn]["names"]
-                    self._metrics[fqn]["params"] = {n: {"type": t} for n, t in zip(names, types)}
-                    self._metrics[fqn]["last_update"] = time.time()
+                if fqn in self._metrics and 'names' in self._metrics[fqn]:
+                    names = self._metrics[fqn]['names']
+                    self._metrics[fqn]['params'] = {n: {'type': t} for n, t in zip(names, types)}
+                    self._metrics[fqn]['last_update'] = time.time()
 
         except Exception:
             with self._lock_type:
@@ -154,9 +155,9 @@ class ParameterTasks:
             with self._lock_type:
                 for fqn in list(self._type_state.keys()):
                     state = self._type_state[fqn]
-                    if "future" in state and state["future"].done():
+                    if 'future' in state and state['future'].done():
                         self._type_state.pop(fqn)
-                    elif time.time() - state.get("timestamp", 0) > self.SERVICE_TIMEOUT:
+                    elif time.time() - state.get('timestamp', 0) > self.SERVICE_TIMEOUT:
                         self._type_state.pop(fqn)
 
             with self._lock_type:
@@ -166,19 +167,19 @@ class ParameterTasks:
 
             with self._lock:
                 for fqn, data in self._metrics.items():
-                    if data.get("names") is None or data.get("params") is not None:
+                    if data.get('names') is None or data.get('params') is not None:
                         continue
 
                     try:
-                        client = self._node.create_client(GetParameterTypes, data["type_srv"])
+                        client = self._node.create_client(GetParameterTypes, data['type_srv'])
                         req = GetParameterTypes.Request()
-                        req.names = data["names"]
+                        req.names = data['names']
 
                         future = client.call_async(req)
                         future.add_done_callback(lambda fut, fqn=fqn: self._type_res_cb(fut, fqn))
 
                         with self._lock_type:
-                            self._type_state[fqn] = {"future": future, "timestamp": time.time()}
+                            self._type_state[fqn] = {'future': future, 'timestamp': time.time()}
                     except Exception:
                         continue
 
@@ -196,9 +197,9 @@ class ParameterTasks:
             new_dict = {}
 
             for node_name, namespace in nodes:
-                fqn_ = f"/{node_name}" if namespace == "/" else f"{namespace}/{node_name}"
-                list_srv = f"{fqn_}/list_parameters"
-                type_srv = f"{fqn_}/get_parameter_types"
+                fqn_ = f'/{node_name}' if namespace == '/' else f'{namespace}/{node_name}'
+                list_srv = f'{fqn_}/list_parameters'
+                type_srv = f'{fqn_}/get_parameter_types'
 
                 if not all(srv in services for srv in (list_srv, type_srv)):
                     continue
@@ -208,11 +209,11 @@ class ParameterTasks:
                         continue
 
                 new_dict[fqn_] = {
-                    "list_srv": list_srv,
-                    "type_srv": type_srv,
-                    "params": None,
-                    "names": None,
-                    "last_update": None
+                    'list_srv': list_srv,
+                    'type_srv': type_srv,
+                    'params': None,
+                    'names': None,
+                    'last_update': None
                 }
 
             if new_dict:

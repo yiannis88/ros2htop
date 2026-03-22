@@ -27,10 +27,10 @@ Collects and processes action metrics.
 Author: yiannis88 <selinis.g@gmail.com> 2026
 """
 
+import re
+import subprocess
 import threading
 import time
-import subprocess
-import re
 
 
 class ActionTasks:
@@ -75,11 +75,11 @@ class ActionTasks:
                 continue
 
             for line in lines:
-                match_ = re.match(r"(.+?)\s*\[(.+?)\]", line)
+                match_ = re.match(r'(.+?)\s*\[(.+?)\]', line)
                 if not match_:
                     continue
                 action_name, types_str = match_.groups()
-                action_type = types_str.split(",")[0].strip()
+                action_type = types_str.split(',')[0].strip()
                 with self._lock_ac:
                     self._ros_actions_list[action_name] = action_type
             time.sleep(self.CHECK_INTERVAL)
@@ -99,13 +99,13 @@ class ActionTasks:
                 if info_output is None:
                     time.sleep(self.CHECK_INTERVAL)
                     continue
-                clients = re.search(r"Action clients:\s*(\d+)", info_output)
-                servers = re.search(r"Action servers:\s*(\d+)", info_output)
+                clients = re.search(r'Action clients:\s*(\d+)', info_output)
+                servers = re.search(r'Action servers:\s*(\d+)', info_output)
 
                 clients_val = int(clients.group(1)) if clients else None
                 servers_val = int(servers.group(1)) if servers else None
                 with self._lock:
-                    self._metrics[info] = {"clients": clients_val, "servers": servers_val}
+                    self._metrics[info] = {'clients': clients_val, 'servers': servers_val}
 
             time.sleep(self.CHECK_INTERVAL)
 
@@ -113,7 +113,7 @@ class ActionTasks:
         """Get the list of ROS2 actions."""
         try:
             proc = subprocess.run(
-                ["ros2", "action", "list", "-t"],
+                ['ros2', 'action', 'list', '-t'],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
@@ -129,7 +129,7 @@ class ActionTasks:
         """Get the info of ROS2 actions."""
         try:
             proc = subprocess.run(
-                ["ros2", "action", "info", f"{info}"],
+                ['ros2', 'action', 'info', f'{info}'],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,

@@ -29,6 +29,7 @@ Author: yiannis88 <selinis.g@gmail.com> 2026
 
 
 import threading
+
 from rclpy.lifecycle import LifecycleNode
 from textual import log
 
@@ -53,7 +54,7 @@ class ServiceTasks:
             srv_list = node.get_service_names_and_types()
             new_dict = {}
             for name, srv_types in srv_list:
-                srv_type = srv_types[0] if srv_types else "unknown"
+                srv_type = srv_types[0] if srv_types else 'unknown'
                 new_dict[name] = {
                     'types': srv_type
                 }

@@ -36,22 +36,22 @@ async def test_textual_tabs():
     """Test tab switching."""
     app = SystemTUI(ros_node=None)
     async with app.run_test() as pilot:
-        assert app.active_tab == "Nodes"
-        await pilot.press("right")
+        assert app.active_tab == 'Nodes'
+        await pilot.press('right')
         await pilot.pause()
-        assert app.active_tab == "Topics"
-        await pilot.press("right")
+        assert app.active_tab == 'Topics'
+        await pilot.press('right')
         await pilot.pause()
-        assert app.active_tab == "Services"
-        await pilot.press("right")
+        assert app.active_tab == 'Services'
+        await pilot.press('right')
         await pilot.pause()
-        assert app.active_tab == "Parameters"
-        await pilot.press("right")
+        assert app.active_tab == 'Parameters'
+        await pilot.press('right')
         await pilot.pause()
-        assert app.active_tab == "Actions"
-        await pilot.press("right")
+        assert app.active_tab == 'Actions'
+        await pilot.press('right')
         await pilot.pause()
-        assert app.active_tab == "Help"
-        await pilot.press("left")
+        assert app.active_tab == 'Help'
+        await pilot.press('left')
         await pilot.pause()
-        assert app.active_tab == "Actions"
+        assert app.active_tab == 'Actions'

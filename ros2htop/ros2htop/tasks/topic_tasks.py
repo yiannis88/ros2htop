@@ -28,20 +28,21 @@ Author: yiannis88 <selinis.g@gmail.com> 2026
 """
 
 
-import threading
-import time
 from functools import partial
 import importlib
-from typing import Dict, Any
+import threading
+import time
+from typing import Any, Dict
+
 from rclpy.lifecycle import LifecycleNode
+from rclpy.qos import QoSPresetProfiles
 from rclpy.serialization import serialize_message
-from rclpy.qos import QoSProfile
 from textual import log
 
 
-DURABILITY_MAP = {-1: "?", 1: "volatile", 2: "transient_local"}
-RELIABILITY_MAP = {-1: "?", 1: "best_effort", 2: "reliable"}
-HISTORY_MAP = {-1: "?", 1: "keep_last", 2: "keep_all"}
+DURABILITY_MAP = {-1: '?', 1: 'volatile', 2: 'transient_local'}
+RELIABILITY_MAP = {-1: '?', 1: 'best_effort', 2: 'reliable'}
+HISTORY_MAP = {-1: '?', 1: 'keep_last', 2: 'keep_all'}
 
 
 class TopicTasks:
@@ -74,10 +75,10 @@ class TopicTasks:
         """Return the msg type from a string."""
         try:
             pkg, _, msg = type_str.partition('/msg/')
-            module = importlib.import_module(f"{pkg}.msg")
+            module = importlib.import_module(f'{pkg}.msg')
             return getattr(module, msg)
         except Exception as err:
-            log(f"Failed to resolve message type {type_str}: {err}")
+            log(f'Failed to resolve message type {type_str}: {err}')
             return None
 
     def get_metrics(self):
@@ -170,18 +171,18 @@ class TopicTasks:
             with self._lock:
                 if topic_name in self._metrics:
                     self._metrics[topic_name]['hz'] = -1
-
-            sub = self._node.create_subscription(
-                msg_type=msg_type,
-                callback=partial(self._start_hz_measurement, topic_name=topic_name),
-                topic=topic_name,
-                qos_profile=QoSProfile(
-                    reliability=topic_info['reliability'],
-                    durability=topic_info['durability'],
-                    history=topic_info['history'],
-                    depth=topic_info['depth']
+            try:
+                qos_profile = QoSPresetProfiles.SYSTEM_DEFAULT.value
+                sub = self._node.create_subscription(
+                    msg_type=msg_type,
+                    callback=partial(self._start_hz_measurement, topic_name=topic_name),
+                    topic=topic_name,
+                    qos_profile=qos_profile
                 )
-            )
+            except Exception as err:
+                log(f'Failed to create subscription for {topic_name}: {err}')
+                time.sleep(TopicTasks.CHECK_INTERVAL)
+                continue
 
             with self._lock_hz:
                 self._hz_sessions[topic_name] = {
@@ -211,27 +212,27 @@ class TopicTasks:
                     qos = {
                         'durability': qos_profile.durability.value,
                         'durability_label': DURABILITY_MAP.get(qos_profile.durability.value,
-                                                               "?"),
+                                                               '?'),
                         'history': qos_profile.history.value,
                         'history_label': HISTORY_MAP.get(qos_profile.history.value,
-                                                         "?"),
+                                                         '?'),
                         'depth': qos_profile.depth,
                         'reliability': qos_profile.reliability.value,
                         'reliability_label': RELIABILITY_MAP.get(qos_profile.reliability.value,
-                                                                 "?")
+                                                                 '?')
                     }
                 topics[name] = {
                     'types': types,
                     'pubs': len(publishers) if publishers else 0,
                     'subs': len(subscribers) if subscribers else 0,
                     'durability': qos['durability'] if qos else 0,
-                    'durability_label': qos['durability_label'] if qos else "?",
+                    'durability_label': qos['durability_label'] if qos else '?',
                     'history': qos['history'] if qos else 0,
-                    'history_label': qos['history_label'] if qos else "?",
+                    'history_label': qos['history_label'] if qos else '?',
                     'depth': qos['depth'] if qos else 0,
                     'reliability': qos['reliability'] if qos else 0,
-                    'reliability_label': qos['reliability_label'] if qos else "?",
-                    'hidden': True if "_action/" in name or name.startswith("/_") else False
+                    'reliability_label': qos['reliability_label'] if qos else '?',
+                    'hidden': True if '_action/' in name or name.startswith('/_') else False
                 }
             with self._lock:
                 for name, new_data in topics.items():

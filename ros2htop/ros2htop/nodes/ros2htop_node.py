@@ -32,20 +32,20 @@ from them. The recommended way to run the node is to use the ros2 run command.
 Author: yiannis88 <selinis.g@gmail.com> 2026
 """
 
-__author__ = "yiannis88"
-__email__ = "selinis.g@gmail.com"
-__date__ = "2026"
-__version__ = "0.0.1"
-__license__ = "MIT"
+__author__ = 'yiannis88'
+__email__ = 'selinis.g@gmail.com'
+__date__ = '2026'
+__version__ = '0.0.2'
+__license__ = 'MIT'
 
 import sys
 import threading
 import time
-import rclpy
-from textual import log
 
+import rclpy
 from ros2htop.core.ros2htop_core import Ros2HtopCore
 from ros2htop.ui.textual_app import SystemTUI
+from textual import log
 
 
 def ros_spin(node):
@@ -61,7 +61,7 @@ def ros_spin(node):
             node.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
-        log("ROS 2 node shutdown successfully.")
+        log('ROS 2 node shutdown successfully.')
 
 
 def main(args=None):
@@ -90,5 +90,5 @@ def main(args=None):
         log('ROS 2 node shutdown successfully.')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
